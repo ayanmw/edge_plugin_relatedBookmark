@@ -4,11 +4,14 @@
 let currentUrl = '';
 let currentDomain = '';
 let relatedBookmarks = [];
+let selectedFolderId = null;
+let selectedFolderTitle = '';
 
 // 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', async () => {
     await initializePopup();
     setupEventListeners();
+    setupDialogEventListeners();
 });
 
 // 初始化弹出窗口
@@ -34,7 +37,76 @@ async function initializePopup() {
 function setupEventListeners() {
     // 一键全聚合按钮
     const aggregateBtn = document.getElementById('aggregate-btn');
-    aggregateBtn.addEventListener('click', handleAggregate);
+    aggregateBtn.addEventListener('click', openAggregateDialog);
+}
+
+// 设置对话框事件监听器
+function setupDialogEventListeners() {
+    // 聚合对话框事件
+    document.getElementById('aggregate-btn').addEventListener('click', openAggregateDialog);
+    document.getElementById('cancel-btn').addEventListener('click', closeAggregateDialog);
+    document.getElementById('confirm-btn').addEventListener('click', confirmAggregate);
+    document.getElementById('custom-btn').addEventListener('click', openFolderSelectDialog);
+    
+    // 文件夹选择对话框事件
+    document.getElementById('folder-cancel-btn').addEventListener('click', closeFolderSelectDialog);
+    document.getElementById('folder-confirm-btn').addEventListener('click', confirmFolderSelect);
+}
+
+// 打开聚合对话框
+function openAggregateDialog() {
+    // 重置选择的文件夹
+    selectedFolderId = null;
+    selectedFolderTitle = '';
+    
+    // 设置默认的新目录名
+    const newFolderNameInput = document.getElementById('new-folder-name');
+    newFolderNameInput.value = `关联书签 - ${currentDomain}`;
+    
+    // 获取第一个书签的目录路径
+    const existingFolderInput = document.getElementById('existing-folder');
+    if (relatedBookmarks.length > 0) {
+        const firstBookmark = relatedBookmarks[0];
+        existingFolderInput.value = firstBookmark.fullPath || '';
+    } else {
+        existingFolderInput.value = '';
+    }
+    
+    // 显示对话框
+    document.getElementById('aggregate-dialog').style.display = 'flex';
+}
+
+// 关闭聚合对话框
+function closeAggregateDialog() {
+    document.getElementById('aggregate-dialog').style.display = 'none';
+}
+
+// 打开文件夹选择对话框
+async function openFolderSelectDialog() {
+    try {
+        // 获取所有书签目录
+        const response = await chrome.runtime.sendMessage({
+            action: 'getAllBookmarkFolders'
+        });
+        
+        if (response.success) {
+            // 显示文件夹树
+            renderFolderTree(response.folders);
+            // 显示对话框
+            document.getElementById('folder-select-dialog').style.display = 'flex';
+        } else {
+            console.error('获取书签目录失败:', response.error);
+            showMessage('获取书签目录失败', 'error');
+        }
+    } catch (error) {
+        console.error('打开文件夹选择对话框时出错:', error);
+        showMessage('打开文件夹选择对话框失败', 'error');
+    }
+}
+
+// 关闭文件夹选择对话框
+function closeFolderSelectDialog() {
+    document.getElementById('folder-select-dialog').style.display = 'none';
 }
 
 // 加载关联书签
@@ -182,14 +254,62 @@ async function handleDeleteBookmark(bookmarkId) {
     }
 }
 
-// 处理一键全聚合
-async function handleAggregate() {
+// 渲染文件夹树
+function renderFolderTree(folders) {
+    const folderTree = document.getElementById('folder-tree');
+    folderTree.innerHTML = '';
+    
+    folders.forEach(folder => {
+        const folderElement = document.createElement('div');
+        folderElement.className = `folder-item level-${folder.level}`;
+        folderElement.dataset.folderId = folder.id;
+        folderElement.dataset.folderTitle = folder.title;
+        folderElement.innerHTML = `
+            <span class="folder-icon">📁</span>
+            <span class="folder-name">${folder.title}</span>
+        `;
+        
+        folderElement.addEventListener('click', () => {
+            // 移除其他选中状态
+            document.querySelectorAll('.folder-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            // 添加当前选中状态
+            folderElement.classList.add('selected');
+            // 启用确认按钮
+            document.getElementById('folder-confirm-btn').disabled = false;
+        });
+        
+        folderTree.appendChild(folderElement);
+    });
+}
+
+// 确认文件夹选择
+function confirmFolderSelect() {
+    const selectedElement = document.querySelector('.folder-item.selected');
+    if (selectedElement) {
+        selectedFolderId = selectedElement.dataset.folderId;
+        selectedFolderTitle = selectedElement.dataset.folderTitle;
+        
+        // 更新聚合对话框的现有目录
+        const existingFolderInput = document.getElementById('existing-folder');
+        existingFolderInput.value = selectedFolderTitle;
+        
+        closeFolderSelectDialog();
+    }
+}
+
+// 确认聚合操作
+async function confirmAggregate() {
     try {
+        const newFolderName = document.getElementById('new-folder-name').value;
+        
         // 向background.js发送消息，执行聚合操作
         const response = await chrome.runtime.sendMessage({
             action: 'aggregateBookmarks',
             bookmarks: relatedBookmarks,
-            domain: currentDomain
+            domain: currentDomain,
+            folderId: selectedFolderId
         });
         
         if (response.success) {
@@ -202,6 +322,7 @@ async function handleAggregate() {
             noBookmarks.style.display = 'block';
             aggregateBtn.disabled = true;
             
+            closeAggregateDialog();
             showMessage(`书签已聚合到目录: ${response.folderTitle}`, 'success');
         } else {
             console.error('聚合书签失败:', response.error);

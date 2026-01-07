@@ -10,7 +10,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       deleteBookmark(request.id).then(sendResponse);
       return true;
     case 'aggregateBookmarks':
-      aggregateBookmarks(request.bookmarks, request.domain).then(sendResponse);
+      aggregateBookmarks(request.bookmarks, request.domain, request.folderId).then(sendResponse);
+      return true;
+    case 'getAllBookmarkFolders':
+      getAllBookmarkFolders().then(sendResponse);
       return true;
   }
 });
@@ -44,6 +47,35 @@ function traverseBookmarks(bookmarkNodes, result, parentPath) {
       });
     } else if (node.children && node.children.length > 0) {
       traverseBookmarks(node.children, result, currentPath);
+    }
+  }
+}
+
+// 获取所有书签目录
+async function getAllBookmarkFolders() {
+  return new Promise((resolve) => {
+    chrome.bookmarks.getTree((bookmarkTreeNodes) => {
+      const folders = [];
+      traverseBookmarkFolders(bookmarkTreeNodes, folders, 0);
+      resolve({ success: true, folders: folders });
+    });
+  });
+}
+
+// 遍历书签树，提取所有目录
+function traverseBookmarkFolders(bookmarkNodes, result, level) {
+  for (const node of bookmarkNodes) {
+    if (!node.url && node.title) {
+      result.push({
+        id: node.id,
+        title: node.title,
+        level: level,
+        parentId: node.parentId
+      });
+      
+      if (node.children && node.children.length > 0) {
+        traverseBookmarkFolders(node.children, result, level + 1);
+      }
     }
   }
 }
@@ -151,11 +183,29 @@ async function deleteBookmark(bookmarkId) {
 }
 
 // 一键聚合书签（移动到同一目录）
-async function aggregateBookmarks(bookmarks, domain) {
+async function aggregateBookmarks(bookmarks, domain, folderId = null) {
   try {
-    // 创建聚合目录
-    const folderTitle = `关联书签 - ${domain}`;
-    const folder = await createBookmarkFolder(folderTitle);
+    let folder;
+    let folderTitle;
+    
+    if (folderId) {
+      // 使用指定的目录
+      folder = { id: folderId };
+      // 获取目录标题
+      folderTitle = await new Promise((resolve) => {
+        chrome.bookmarks.get(folderId, (nodes) => {
+          if (nodes && nodes.length > 0) {
+            resolve(nodes[0].title);
+          } else {
+            resolve('自定义目录');
+          }
+        });
+      });
+    } else {
+      // 创建新的聚合目录
+      folderTitle = `关联书签 - ${domain}`;
+      folder = await createBookmarkFolder(folderTitle);
+    }
     
     // 移动所有关联书签到该目录
     for (const bookmark of bookmarks) {

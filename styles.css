@@ -198,3 +198,194 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* 对话框样式 */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.dialog {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    width: 320px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: hidden;
+}
+
+.dialog.dialog-sm {
+    width: 280px;
+}
+
+.dialog-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8e8e8;
+    background-color: #fafafa;
+}
+
+.dialog-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.dialog-content {
+    padding: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dialog-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #e8e8e8;
+    background-color: #fafafa;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #34495e;
+    margin-bottom: 6px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    transition: border-color 0.2s ease;
+    background-color: #fff;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.form-input:read-only {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+/* 按钮样式 */
+.dialog-btn {
+    padding: 6px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dialog-btn.confirm-btn {
+    background-color: #3498db;
+    color: #fff;
+}
+
+.dialog-btn.confirm-btn:hover {
+    background-color: #2980b9;
+}
+
+.dialog-btn.confirm-btn:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.dialog-btn.cancel-btn {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #d9d9d9;
+}
+
+.dialog-btn.cancel-btn:hover {
+    background-color: #e8e8e8;
+}
+
+.dialog-btn.custom-btn {
+    background-color: #95a5a6;
+    color: #fff;
+}
+
+.dialog-btn.custom-btn:hover {
+    background-color: #7f8c8d;
+}
+
+/* 文件夹树样式 */
+.folder-tree {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.folder-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+    font-size: 13px;
+}
+
+.folder-item:hover {
+    background-color: #f0f7ff;
+}
+
+.folder-item.selected {
+    background-color: #e8f4f8;
+    color: #3498db;
+    font-weight: 500;
+}
+
+.folder-item.level-0 {
+    padding-left: 8px;
+}
+
+.folder-item.level-1 {
+    padding-left: 24px;
+}
+
+.folder-item.level-2 {
+    padding-left: 40px;
+}
+
+.folder-item.level-3 {
+    padding-left: 56px;
+}
+
+.folder-item.level-4 {
+    padding-left: 72px;
+}
+
+.folder-icon {
+    margin-right: 6px;
+    font-size: 12px;
+}
+
+.folder-name {
+    vertical-align: middle;
+}

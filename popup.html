@@ -30,6 +30,46 @@
         </div>
     </div>
     
+    <!-- 聚合对话框 -->
+    <div id="aggregate-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>一键全聚合</h3>
+            </div>
+            <div class="dialog-content">
+                <div class="form-group">
+                    <label for="existing-folder">现有目录:</label>
+                    <input type="text" id="existing-folder" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="new-folder-name">新聚合目录名:</label>
+                    <input type="text" id="new-folder-name" class="form-input">
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button id="custom-btn" class="dialog-btn custom-btn">自定义</button>
+                <button id="cancel-btn" class="dialog-btn cancel-btn">取消</button>
+                <button id="confirm-btn" class="dialog-btn confirm-btn">完成</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 自定义目录选择对话框 -->
+    <div id="folder-select-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog dialog-sm">
+            <div class="dialog-header">
+                <h3>选择目录</h3>
+            </div>
+            <div class="dialog-content">
+                <div id="folder-tree" class="folder-tree"></div>
+            </div>
+            <div class="dialog-footer">
+                <button id="folder-cancel-btn" class="dialog-btn cancel-btn">取消</button>
+                <button id="folder-confirm-btn" class="dialog-btn confirm-btn" disabled>确认</button>
+            </div>
+        </div>
+    </div>
+    
     <script src="popup.js"></script>
 </body>
 </html>
