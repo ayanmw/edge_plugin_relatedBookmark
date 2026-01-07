@@ -38,13 +38,19 @@
             </div>
             <div class="dialog-content">
                 <div class="form-group">
-                    <label for="existing-folder">现有目录:</label>
-                    <input type="text" id="existing-folder" class="form-input" readonly>
+                <label for="existing-folder">现有目录:</label>
+                <input type="text" id="existing-folder" class="form-input" readonly>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="create-new-folder" class="checkbox-input" checked>
+                    <label for="create-new-folder" class="checkbox-label">新建聚合目录</label>
                 </div>
-                <div class="form-group">
-                    <label for="new-folder-name">新聚合目录名:</label>
-                    <input type="text" id="new-folder-name" class="form-input">
-                </div>
+            </div>
+            <div class="form-group" id="new-folder-group">
+                <label for="new-folder-name">新聚合目录名:</label>
+                <input type="text" id="new-folder-name" class="form-input">
+            </div>
             </div>
             <div class="dialog-footer">
                 <button id="custom-btn" class="dialog-btn custom-btn">自定义</button>

@@ -48,9 +48,19 @@ function setupDialogEventListeners() {
     document.getElementById('confirm-btn').addEventListener('click', confirmAggregate);
     document.getElementById('custom-btn').addEventListener('click', openFolderSelectDialog);
     
+    // 新建聚合目录复选框事件
+    document.getElementById('create-new-folder').addEventListener('change', toggleNewFolderInput);
+    
     // 文件夹选择对话框事件
     document.getElementById('folder-cancel-btn').addEventListener('click', closeFolderSelectDialog);
     document.getElementById('folder-confirm-btn').addEventListener('click', confirmFolderSelect);
+}
+
+// 切换新建目录输入框显示
+function toggleNewFolderInput() {
+    const createNewFolder = document.getElementById('create-new-folder');
+    const newFolderGroup = document.getElementById('new-folder-group');
+    newFolderGroup.style.display = createNewFolder.checked ? 'block' : 'none';
 }
 
 // 打开聚合对话框
@@ -63,11 +73,23 @@ function openAggregateDialog() {
     const newFolderNameInput = document.getElementById('new-folder-name');
     newFolderNameInput.value = `关联书签 - ${currentDomain}`;
     
-    // 获取第一个书签的目录路径
+    // 切换新建目录输入框显示
+    toggleNewFolderInput();
+    
+    // 获取现有目录路径：优先使用当前页面书签所在目录，否则使用第一个书签所在目录
     const existingFolderInput = document.getElementById('existing-folder');
+    let targetBookmark = null;
+    
+    // 查找当前页面的书签
     if (relatedBookmarks.length > 0) {
-        const firstBookmark = relatedBookmarks[0];
-        let folderPath = firstBookmark.fullPath || '';
+        targetBookmark = relatedBookmarks.find(bookmark => bookmark.url === currentUrl);
+        
+        // 如果没有当前页面的书签，使用第一个书签
+        if (!targetBookmark) {
+            targetBookmark = relatedBookmarks[0];
+        }
+        
+        let folderPath = targetBookmark.fullPath || '';
         
         // 提取目录部分，移除最后一个元素（书签标题）
         if (folderPath) {
@@ -320,14 +342,22 @@ function confirmFolderSelect() {
 // 确认聚合操作
 async function confirmAggregate() {
     try {
-        const newFolderName = document.getElementById('new-folder-name').value;
+        const createNewFolder = document.getElementById('create-new-folder').checked;
+        let folderIdToUse = selectedFolderId;
+        
+        // 如果没有选择自定义目录，且不创建新目录，则使用现有目录
+        if (!folderIdToUse && !createNewFolder) {
+            // 这里需要获取现有目录的ID，暂时使用默认书签栏ID
+            folderIdToUse = '1'; // 默认书签栏ID
+        }
         
         // 向background.js发送消息，执行聚合操作
         const response = await chrome.runtime.sendMessage({
             action: 'aggregateBookmarks',
             bookmarks: relatedBookmarks,
             domain: currentDomain,
-            folderId: selectedFolderId
+            folderId: folderIdToUse,
+            createNewFolder: createNewFolder
         });
         
         if (response.success) {

@@ -10,7 +10,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       deleteBookmark(request.id).then(sendResponse);
       return true;
     case 'aggregateBookmarks':
-      aggregateBookmarks(request.bookmarks, request.domain, request.folderId).then(sendResponse);
+      aggregateBookmarks(request.bookmarks, request.domain, request.folderId, request.createNewFolder).then(sendResponse);
       return true;
     case 'getAllBookmarkFolders':
       getAllBookmarkFolders().then(sendResponse);
@@ -193,7 +193,7 @@ async function deleteBookmark(bookmarkId) {
 }
 
 // 一键聚合书签（移动到同一目录）
-async function aggregateBookmarks(bookmarks, domain, folderId = null) {
+async function aggregateBookmarks(bookmarks, domain, folderId = null, createNewFolder = true) {
   try {
     let folder;
     let folderTitle;
@@ -211,10 +211,14 @@ async function aggregateBookmarks(bookmarks, domain, folderId = null) {
           }
         });
       });
-    } else {
+    } else if (createNewFolder) {
       // 创建新的聚合目录
       folderTitle = `关联书签 - ${domain}`;
       folder = await createBookmarkFolder(folderTitle);
+    } else {
+      // 不使用指定目录，也不创建新目录，使用默认书签栏
+      folder = { id: '1' };
+      folderTitle = '收藏夹栏';
     }
     
     // 移动所有关联书签到该目录

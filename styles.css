@@ -272,6 +272,25 @@ body {
     margin-bottom: 6px;
 }
 
+/* 复选框样式 */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.checkbox-input {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.checkbox-label {
+    font-size: 13px;
+    color: #34495e;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
 .form-input {
     width: 100%;
     padding: 8px 12px;
