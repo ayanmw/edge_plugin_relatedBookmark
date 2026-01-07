@@ -1,10 +1,12 @@
-name: Build and Test
+name: Build, Test and Release
 
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  release:
+    types: [ published ]
 
 jobs:
   build:
@@ -29,7 +31,7 @@ jobs:
       run: |
         mkdir -p build
         cp -r ./* build/ 2>/dev/null || true
-        rm -rf build/.git build/.github build/node_modules
+        rm -rf build/.git build/.github build/node_modules build/package-lock.json
         zip -r edge_plugin_relatedBookmark.zip build/
       
     - name: Upload build artifact
@@ -37,3 +39,14 @@ jobs:
       with:
         name: edge-plugin-build
         path: edge_plugin_relatedBookmark.zip
+    
+    - name: Upload release asset
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./edge_plugin_relatedBookmark.zip
+        asset_name: edge_plugin_relatedBookmark.zip
+        asset_content_type: application/zip
