@@ -6,6 +6,7 @@ let currentDomain = '';
 let relatedBookmarks = [];
 let selectedFolderId = null;
 let selectedFolderTitle = '';
+let existingFolderId = null;
 
 // 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', async () => {
@@ -89,6 +90,9 @@ function openAggregateDialog() {
             targetBookmark = relatedBookmarks[0];
         }
         
+        // 存储现有目录的ID
+        existingFolderId = targetBookmark.parentId;
+        
         let folderPath = targetBookmark.fullPath || '';
         
         // 提取目录部分，移除最后一个元素（书签标题）
@@ -110,6 +114,7 @@ function openAggregateDialog() {
         existingFolderInput.value = folderPath;
     } else {
         existingFolderInput.value = '收藏夹栏';
+        existingFolderId = '1'; // 默认书签栏ID
     }
     
     // 显示对话框
@@ -347,8 +352,7 @@ async function confirmAggregate() {
         
         // 如果没有选择自定义目录，且不创建新目录，则使用现有目录
         if (!folderIdToUse && !createNewFolder) {
-            // 这里需要获取现有目录的ID，暂时使用默认书签栏ID
-            folderIdToUse = '1'; // 默认书签栏ID
+            folderIdToUse = existingFolderId;
         }
         
         // 向background.js发送消息，执行聚合操作
