@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关联书签查看器</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">关联书签查看器</h1>
+        
+        <div class="current-url-section">
+            <h2 class="subtitle">当前页面</h2>
+            <p id="current-url" class="url-text"></p>
+        </div>
+        
+        <div class="bookmarks-section">
+            <h2 class="subtitle">关联书签</h2>
+            <div id="bookmarks-container" class="bookmarks-container"></div>
+            <div id="no-bookmarks" class="no-bookmarks" style="display: none;">
+                没有找到关联书签
+            </div>
+        </div>
+        
+        <div class="actions-section">
+            <button id="aggregate-btn" class="action-btn aggregate-btn" disabled>
+                一键全聚合
+            </button>
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

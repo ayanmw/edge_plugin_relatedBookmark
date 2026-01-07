@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "关联书签查看器",
+  "version": "1.0",
+  "description": "快速查看当前页面的关联书签，支持相同主域名和IP的书签识别",
+  "permissions": [
+    "bookmarks",
+    "activeTab",
+    "tabs"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon.svg",
+      "48": "images/icon.svg",
+      "128": "images/icon.svg"
+    }
+  },
+  "icons": {
+    "16": "images/icon.svg",
+    "48": "images/icon.svg",
+    "128": "images/icon.svg"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
