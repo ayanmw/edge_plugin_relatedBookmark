@@ -67,9 +67,27 @@ function openAggregateDialog() {
     const existingFolderInput = document.getElementById('existing-folder');
     if (relatedBookmarks.length > 0) {
         const firstBookmark = relatedBookmarks[0];
-        existingFolderInput.value = firstBookmark.fullPath || '';
+        let folderPath = firstBookmark.fullPath || '';
+        
+        // 提取目录部分，移除最后一个元素（书签标题）
+        if (folderPath) {
+            const pathParts = folderPath.split(' > ');
+            if (pathParts.length > 1) {
+                // 如果有多个部分，移除最后一个（书签标题）
+                pathParts.pop();
+                folderPath = pathParts.join(' > ');
+            } else {
+                // 如果只有一个部分，说明在根目录下，使用默认值
+                folderPath = '收藏夹栏';
+            }
+        } else {
+            // 如果没有路径，使用默认值
+            folderPath = '收藏夹栏';
+        }
+        
+        existingFolderInput.value = folderPath;
     } else {
-        existingFolderInput.value = '';
+        existingFolderInput.value = '收藏夹栏';
     }
     
     // 显示对话框
