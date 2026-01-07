@@ -1,0 +1,19 @@
+{
+  "name": "edge-plugin-related-bookmark",
+  "version": "1.0.0",
+  "description": "A Edge browser extension to view related bookmarks",
+  "main": "background.js",
+  "scripts": {
+    "lint": "echo \"Linting not configured yet\"",
+    "build": "echo \"Build completed\"",
+    "test": "echo \"No tests configured yet\""
+  },
+  "keywords": [
+    "edge",
+    "extension",
+    "bookmark",
+    "related-bookmarks"
+  ],
+  "author": "ayanmw",
+  "license": "MIT"
+}

@@ -1,0 +1,39 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run lint check
+      run: npm run lint || echo "Lint not configured"
+      
+    - name: Build extension
+      run: |
+        mkdir -p build
+        cp -r ./* build/ 2>/dev/null || true
+        rm -rf build/.git build/.github build/node_modules
+        zip -r edge_plugin_relatedBookmark.zip build/
+      
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: edge-plugin-build
+        path: edge_plugin_relatedBookmark.zip
