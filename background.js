@@ -65,10 +65,20 @@ async function getAllBookmarkFolders() {
 // 遍历书签树，提取所有目录
 function traverseBookmarkFolders(bookmarkNodes, result, level) {
   for (const node of bookmarkNodes) {
-    if (!node.url && node.title) {
+    // 只处理目录节点（没有url属性的节点）
+    if (!node.url) {
+      // 对于根节点，可能没有title，我们需要处理这种情况
+      // 通常根节点包括：书签栏、其他书签等
+      let folderTitle = node.title || '根目录';
+      
+      // 跳过工作区节点（与Chrome不兼容）
+      if (folderTitle.toLowerCase().includes('工作区') || folderTitle === 'Workspaces') {
+        continue;
+      }
+      
       result.push({
         id: node.id,
-        title: node.title,
+        title: folderTitle,
         level: level,
         parentId: node.parentId
       });
