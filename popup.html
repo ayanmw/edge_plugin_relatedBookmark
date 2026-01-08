@@ -8,7 +8,10 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="title">关联书签查看器</h1>
+        <div class="header">
+            <h1 class="title">关联书签查看器</h1>
+            <button id="search-btn" class="search-btn" title="搜索书签">🔍</button>
+        </div>
         
         <div class="current-url-section">
             <h2 class="subtitle">当前页面</h2>
@@ -72,6 +75,61 @@
             <div class="dialog-footer">
                 <button id="folder-cancel-btn" class="dialog-btn cancel-btn">取消</button>
                 <button id="folder-confirm-btn" class="dialog-btn confirm-btn" disabled>确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 搜索对话框 -->
+    <div id="search-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>搜索书签</h3>
+            </div>
+            <div class="dialog-content">
+                <div class="form-group">
+                    <input type="text" id="search-input" class="form-input" placeholder="输入关键词搜索书签">
+                </div>
+                <div class="form-group">
+                    <label>搜索范围:</label>
+                    <div class="search-options-header">
+                        <button id="select-all-search-options" class="select-all-btn">全选</button>
+                    </div>
+                    <div class="search-options">
+                        <label class="search-option">
+                            <input type="checkbox" id="search-title" checked>
+                            <span>标题</span>
+                        </label>
+                        <label class="search-option">
+                            <input type="checkbox" id="search-domain" checked>
+                            <span>域名</span>
+                        </label>
+                        <label class="search-option">
+                            <input type="checkbox" id="search-url-query">
+                            <span>URL查询</span>
+                        </label>
+                        <label class="search-option">
+                            <input type="checkbox" id="search-folder">
+                            <span>目录名</span>
+                        </label>
+                    </div>
+                    <div class="search-options-footer">
+                        <label class="search-option">
+                            <input type="checkbox" id="search-case-sensitive">
+                            <span>区分大小写</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button id="do-search-btn" class="dialog-btn confirm-btn" style="width: 100%;">搜索</button>
+                </div>
+                <div id="search-results-container" class="search-results-container"></div>
+                <div id="no-search-results" class="no-bookmarks" style="display: none;">
+                    没有找到匹配的书签
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button id="search-cancel-btn" class="dialog-btn cancel-btn">关闭</button>
+                <button id="search-aggregate-btn" class="dialog-btn confirm-btn" disabled>一键聚合</button>
             </div>
         </div>
     </div>

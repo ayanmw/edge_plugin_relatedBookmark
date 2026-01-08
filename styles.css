@@ -30,6 +30,107 @@ body {
     text-align: center;
 }
 
+/* 头部样式 */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.header .title {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+/* 搜索按钮样式 */
+.search-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background-color: #3498db;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    margin-left: 10px;
+}
+
+.search-btn:hover {
+    background-color: #2980b9;
+}
+
+/* 搜索结果容器样式 */
+.search-results-container {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 12px;
+}
+
+/* 搜索选项样式 */
+.search-options-header {
+    margin-bottom: 8px;
+}
+
+.select-all-btn {
+    padding: 4px 12px;
+    font-size: 12px;
+    background-color: #95a5a6;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.select-all-btn:hover {
+    background-color: #7f8c8d;
+}
+
+.search-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.search-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 13px;
+    color: #34495e;
+}
+
+.search-option input {
+    margin-right: 6px;
+    cursor: pointer;
+}
+
+.search-option span {
+    cursor: pointer;
+}
+
+/* 移除按钮样式 */
+.remove-btn {
+    padding: 5px 8px;
+    background-color: #f39c12;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s ease;
+}
+
+.remove-btn:hover {
+    background-color: #e67e22;
+}
+
 .subtitle {
     font-size: 14px;
     font-weight: 500;

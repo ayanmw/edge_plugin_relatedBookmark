@@ -10,10 +10,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       deleteBookmark(request.id).then(sendResponse);
       return true;
     case 'aggregateBookmarks':
-      aggregateBookmarks(request.bookmarks, request.domain, request.folderId, request.createNewFolder).then(sendResponse);
+      aggregateBookmarks(request.bookmarks, request.domain, request.folderId, request.createNewFolder, request.newFolderName).then(sendResponse);
       return true;
     case 'getAllBookmarkFolders':
       getAllBookmarkFolders().then(sendResponse);
+      return true;
+    case 'searchBookmarks':
+      searchBookmarks(request.keyword, request.searchOptions).then(sendResponse);
       return true;
   }
 });
@@ -24,6 +27,10 @@ async function getAllBookmarks() {
     chrome.bookmarks.getTree((bookmarkTreeNodes) => {
       const bookmarks = [];
       traverseBookmarks(bookmarkTreeNodes, bookmarks, []);
+      console.log('background.js: getAllBookmarks 完成，获取到书签数量:', bookmarks.length);
+      if (bookmarks.length > 0) {
+        console.log('background.js: 前5个书签:', bookmarks.slice(0, 5));
+      }
       resolve(bookmarks);
     });
   });
@@ -193,7 +200,7 @@ async function deleteBookmark(bookmarkId) {
 }
 
 // 一键聚合书签（移动到同一目录）
-async function aggregateBookmarks(bookmarks, domain, folderId = null, createNewFolder = true) {
+async function aggregateBookmarks(bookmarks, domain, folderId = null, createNewFolder = true, newFolderName = null) {
   try {
     let folder;
     let folderTitle;
@@ -213,7 +220,7 @@ async function aggregateBookmarks(bookmarks, domain, folderId = null, createNewF
       });
     } else if (createNewFolder) {
       // 创建新的聚合目录
-      folderTitle = `关联书签 - ${domain}`;
+      folderTitle = newFolderName || `关联书签 - ${domain}`;
       folder = await createBookmarkFolder(folderTitle);
     } else {
       // 不使用指定目录，也不创建新目录，使用默认书签栏
@@ -238,6 +245,170 @@ async function aggregateBookmarks(bookmarks, domain, folderId = null, createNewF
       error: error.message
     };
   }
+}
+
+// 搜索书签
+async function searchBookmarks(keyword, searchOptions) {
+  try {
+    console.log('background.js: 开始搜索书签，关键词:', keyword, '搜索选项:', searchOptions);
+    
+    const allBookmarks = await getAllBookmarks();
+    console.log('background.js: 所有书签数量:', allBookmarks.length);
+    
+    // 根据大小写敏感选项处理关键词
+    const searchKeyword = searchOptions.caseSensitive ? keyword : keyword.toLowerCase();
+    
+    const matchedBookmarks = [];
+    const matchedFolderIds = new Set();
+    
+    // 如果启用了目录搜索，先搜索匹配的目录
+    if (searchOptions.folder) {
+      console.log('background.js: 开始搜索目录...');
+      const matchedFolders = await searchFolders(keyword, searchOptions.caseSensitive);
+      console.log('background.js: 匹配的目录数量:', matchedFolders.length);
+      
+      // 收集所有匹配目录下的书签
+      for (const folder of matchedFolders) {
+        console.log(`background.js: 处理目录 "${folder.title}" (ID: ${folder.id})`);
+        const folderBookmarks = await getBookmarksInFolder(folder.id);
+        console.log(`background.js: 目录 "${folder.title}" 下的书签数量:`, folderBookmarks.length);
+        
+        // 将这些书签标记为来自目录搜索
+        folderBookmarks.forEach(bookmark => {
+          bookmark.fromFolder = folder.title;
+          bookmark.folderId = folder.id;
+          matchedFolderIds.add(bookmark.id);
+        });
+        
+        matchedBookmarks.push(...folderBookmarks);
+      }
+    }
+    
+    console.log('background.js: 开始搜索书签...');
+    // 搜索书签
+    for (const bookmark of allBookmarks) {
+      // 如果已经从目录搜索中包含了，跳过
+      if (matchedFolderIds.has(bookmark.id)) {
+        continue;
+      }
+      
+      let matched = false;
+      
+      // 搜索标题
+      if (searchOptions.title && bookmark.title) {
+        const title = searchOptions.caseSensitive ? bookmark.title : bookmark.title.toLowerCase();
+        if (title.includes(searchKeyword)) {
+          console.log(`background.js: 书签 "${bookmark.title}" 匹配标题`);
+          matched = true;
+        }
+      }
+      
+      // 搜索域名
+      if (!matched && searchOptions.domain && bookmark.url) {
+        try {
+          const url = new URL(bookmark.url);
+          const hostname = searchOptions.caseSensitive ? url.hostname : url.hostname.toLowerCase();
+          if (hostname.includes(searchKeyword)) {
+            console.log(`background.js: 书签 "${bookmark.title}" 匹配域名: ${hostname}`);
+            matched = true;
+          }
+        } catch (e) {
+          console.log(`background.js: 解析URL失败: ${bookmark.url}`, e);
+        }
+      }
+      
+      // 搜索URL查询参数
+      if (!matched && searchOptions.urlQuery && bookmark.url) {
+        try {
+          const url = new URL(bookmark.url);
+          const searchParams = searchOptions.caseSensitive ? url.search : url.search.toLowerCase();
+          if (searchParams.includes(searchKeyword)) {
+            console.log(`background.js: 书签 "${bookmark.title}" 匹配URL查询: ${searchParams}`);
+            matched = true;
+          }
+        } catch (e) {
+          console.log(`background.js: 解析URL失败: ${bookmark.url}`, e);
+        }
+      }
+      
+      if (matched) {
+        matchedBookmarks.push(bookmark);
+      }
+    }
+    
+    console.log('background.js: 匹配的书签数量:', matchedBookmarks.length);
+    
+    return {
+      success: true,
+      bookmarks: matchedBookmarks
+    };
+  } catch (error) {
+    console.error('background.js: 搜索书签时出错:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+// 搜索目录
+async function searchFolders(keyword, caseSensitive = false) {
+  return new Promise((resolve) => {
+    chrome.bookmarks.getTree((bookmarkTreeNodes) => {
+      const folders = [];
+      const searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
+      
+      console.log('background.js: 开始遍历书签树搜索目录...');
+      traverseAndSearchFolders(bookmarkTreeNodes, folders, searchKeyword, caseSensitive);
+      console.log('background.js: 目录搜索完成，找到:', folders.length, '个目录');
+      
+      resolve(folders);
+    });
+  });
+}
+
+// 遍历并搜索目录
+function traverseAndSearchFolders(bookmarkNodes, result, searchKeyword, caseSensitive) {
+  for (const node of bookmarkNodes) {
+    // 跳过工作区节点
+    if (node.title && (node.title.toLowerCase().includes('工作区') || node.title === 'Workspaces')) {
+      console.log('background.js: 跳过工作区节点:', node.title);
+      if (node.children && node.children.length > 0) {
+        traverseAndSearchFolders(node.children, result, searchKeyword, caseSensitive);
+      }
+      continue;
+    }
+    
+    // 如果是目录节点（没有url属性）且标题匹配
+    if (!node.url && node.title) {
+      const title = caseSensitive ? node.title : node.title.toLowerCase();
+      if (title.includes(searchKeyword)) {
+        console.log(`background.js: 找到匹配目录: "${node.title}" (ID: ${node.id})`);
+        result.push({
+          id: node.id,
+          title: node.title
+        });
+      }
+    }
+    
+    // 递归遍历子节点
+    if (node.children && node.children.length > 0) {
+      traverseAndSearchFolders(node.children, result, searchKeyword, caseSensitive);
+    }
+  }
+}
+
+// 获取目录下的所有书签
+async function getBookmarksInFolder(folderId) {
+  return new Promise((resolve) => {
+    chrome.bookmarks.getSubTree(folderId, (bookmarkTree) => {
+      const bookmarks = [];
+      if (bookmarkTree && bookmarkTree.length > 0) {
+        traverseBookmarks(bookmarkTree, bookmarks, []);
+      }
+      resolve(bookmarks);
+    });
+  });
 }
 
 // 创建书签文件夹

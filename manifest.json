@@ -3,6 +3,7 @@
   "name": "关联书签查看器",
   "version": "1.0",
   "description": "快速查看当前页面的关联书签，支持相同主域名和IP的书签识别",
+  "homepage_url": "https://github.com/ayanmw/edge_plugin_relatedBookmark",
   "permissions": [
     "bookmarks",
     "activeTab",
