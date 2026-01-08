@@ -93,29 +93,14 @@
                 
                 <div class="form-group">
                     <label for="existing-folder">现有目录:</label>
-                    <input type="text" id="existing-folder" class="form-input" readonly>
-                    <button id="custom-btn" class="dialog-btn secondary-btn">选择目录</button>
+                    <select id="existing-folder" class="form-select">
+                        <option value="">选择一个目录...</option>
+                    </select>
                 </div>
             </div>
             <div class="dialog-footer">
                 <button id="cancel-btn" class="dialog-btn cancel-btn">取消</button>
                 <button id="confirm-btn" class="dialog-btn confirm-btn">确认</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 自定义目录选择对话框 -->
-    <div id="folder-select-dialog" class="dialog-overlay" style="display: none;">
-        <div class="dialog dialog-sm">
-            <div class="dialog-header">
-                <h3>选择目录</h3>
-            </div>
-            <div class="dialog-content">
-                <div id="folder-tree" class="folder-tree"></div>
-            </div>
-            <div class="dialog-footer">
-                <button id="folder-cancel-btn" class="dialog-btn cancel-btn">取消</button>
-                <button id="folder-confirm-btn" class="dialog-btn confirm-btn" disabled>确认</button>
             </div>
         </div>
     </div>

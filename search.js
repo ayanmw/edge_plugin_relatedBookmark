@@ -45,15 +45,10 @@ function setupDialogEventListeners() {
     // 聚合对话框事件
     document.getElementById('cancel-btn').addEventListener('click', closeAggregateDialog);
     document.getElementById('confirm-btn').addEventListener('click', confirmAggregate);
-    document.getElementById('custom-btn').addEventListener('click', openFolderSelectDialog);
     
     // 新建聚合目录单选框事件
     document.getElementById('create-new-folder-option').addEventListener('change', toggleNewFolderInput);
     document.getElementById('use-existing-folder-option').addEventListener('change', toggleNewFolderInput);
-    
-    // 文件夹选择对话框事件
-    document.getElementById('folder-cancel-btn').addEventListener('click', closeFolderSelectDialog);
-    document.getElementById('folder-confirm-btn').addEventListener('click', confirmFolderSelect);
 }
 
 // 设置搜索选项
@@ -294,37 +289,50 @@ function openAggregateDialog() {
     // 切换新建目录输入框显示
     toggleNewFolderInput();
     
-    // 获取现有目录路径：使用第一个书签所在目录
-    const existingFolderInput = document.getElementById('existing-folder');
-    let targetBookmark = null;
+    // 收集搜索结果中的所有目录并去重
+    const folderSet = new Set();
+    const folders = [];
     
-    if (filteredSearchResults.length > 0) {
-        targetBookmark = filteredSearchResults[0];
-        
-        // 存储现有目录的ID
-        existingFolderId = targetBookmark.parentId;
-        
-        let folderPath = targetBookmark.fullPath || '';
-        
-        // 提取目录部分，移除最后一个元素（书签标题）
-        if (folderPath) {
-            const pathParts = folderPath.split(' > ');
+    filteredSearchResults.forEach(bookmark => {
+        if (bookmark.fullPath) {
+            const pathParts = bookmark.fullPath.split(' > ');
             if (pathParts.length > 1) {
-                // 如果有多个部分，移除最后一个（书签标题）
+                // 提取目录路径（移除最后一个元素，即书签标题）
                 pathParts.pop();
-                folderPath = pathParts.join(' > ');
-            } else {
-                // 如果只有一个部分，说明在根目录下，使用默认值
-                folderPath = '收藏夹栏';
+                const folderPath = pathParts.join(' > ');
+                
+                // 去重
+                if (!folderSet.has(folderPath)) {
+                    folderSet.add(folderPath);
+                    folders.push({
+                        path: folderPath,
+                        id: bookmark.parentId
+                    });
+                }
             }
-        } else {
-            // 如果没有路径，使用默认值
-            folderPath = '收藏夹栏';
         }
-        
-        existingFolderInput.value = folderPath;
+    });
+    
+    // 排序目录（按路径长度排序，短的在前）
+    folders.sort((a, b) => a.path.length - b.path.length);
+    
+    // 填充下拉框
+    const existingFolderSelect = document.getElementById('existing-folder');
+    existingFolderSelect.innerHTML = '<option value="">选择一个目录...</option>';
+    
+    folders.forEach(folder => {
+        const option = document.createElement('option');
+        option.value = folder.id;
+        option.textContent = folder.path;
+        existingFolderSelect.appendChild(option);
+    });
+    
+    // 设置默认值：使用第一个书签所在目录
+    const existingFolderInput = document.getElementById('existing-folder');
+    if (folders.length > 0) {
+        existingFolderId = folders[0].id;
+        existingFolderInput.value = folders[0].id;
     } else {
-        existingFolderInput.value = '收藏夹栏';
         existingFolderId = '1'; // 默认书签栏ID
     }
     
@@ -337,88 +345,16 @@ function closeAggregateDialog() {
     document.getElementById('aggregate-dialog').style.display = 'none';
 }
 
-// 打开文件夹选择对话框
-async function openFolderSelectDialog() {
-    try {
-        // 获取所有书签目录
-        const response = await chrome.runtime.sendMessage({
-            action: 'getAllBookmarkFolders'
-        });
-        
-        if (response.success) {
-            // 显示文件夹树
-            renderFolderTree(response.folders);
-            // 显示对话框
-            document.getElementById('folder-select-dialog').style.display = 'flex';
-        } else {
-            console.error('获取书签目录失败:', response.error);
-            showMessage('获取书签目录失败', 'error');
-        }
-    } catch (error) {
-        console.error('打开文件夹选择对话框时出错:', error);
-        showMessage('打开文件夹选择对话框失败', 'error');
-    }
-}
-
-// 关闭文件夹选择对话框
-function closeFolderSelectDialog() {
-    document.getElementById('folder-select-dialog').style.display = 'none';
-}
-
-// 渲染文件夹树
-function renderFolderTree(folders) {
-    const folderTree = document.getElementById('folder-tree');
-    folderTree.innerHTML = '';
-    
-    folders.forEach(folder => {
-        const folderElement = document.createElement('div');
-        folderElement.className = `folder-item level-${folder.level}`;
-        folderElement.dataset.folderId = folder.id;
-        folderElement.dataset.folderTitle = folder.title;
-        folderElement.innerHTML = `
-            <span class="folder-icon">📁</span>
-            <span class="folder-name">${folder.title}</span>
-        `;
-        
-        folderElement.addEventListener('click', () => {
-            // 移除其他选中状态
-            document.querySelectorAll('.folder-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-            // 添加当前选中状态
-            folderElement.classList.add('selected');
-            // 启用确认按钮
-            document.getElementById('folder-confirm-btn').disabled = false;
-        });
-        
-        folderTree.appendChild(folderElement);
-    });
-}
-
-// 确认文件夹选择
-function confirmFolderSelect() {
-    const selectedElement = document.querySelector('.folder-item.selected');
-    if (selectedElement) {
-        selectedFolderId = selectedElement.dataset.folderId;
-        selectedFolderTitle = selectedElement.dataset.folderTitle;
-        
-        // 更新聚合对话框的现有目录
-        const existingFolderInput = document.getElementById('existing-folder');
-        existingFolderInput.value = selectedFolderTitle;
-        
-        closeFolderSelectDialog();
-    }
-}
-
 // 确认聚合操作
 async function confirmAggregate() {
     try {
         const createNewFolder = document.getElementById('create-new-folder-option').checked;
         let folderIdToUse = null;
         
-        // 如果选择使用现有目录，则使用选择的目录ID
+        // 如果选择使用现有目录，则从下拉框获取选择的目录ID
         if (!createNewFolder) {
-            folderIdToUse = selectedFolderId || existingFolderId;
+            const existingFolderSelect = document.getElementById('existing-folder');
+            folderIdToUse = existingFolderSelect.value || existingFolderId;
         }
         
         // 向background.js发送消息，执行聚合操作
