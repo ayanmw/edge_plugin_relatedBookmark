@@ -6,6 +6,7 @@ let filteredSearchResults = [];
 let selectedFolderId = null;
 let selectedFolderTitle = '';
 let existingFolderId = null;
+let existingFolderSelect = null;
 
 // 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -328,7 +329,7 @@ function openAggregateDialog() {
     folders.sort((a, b) => a.path.length - b.path.length);
     
     // 填充下拉框
-    const existingFolderSelect = document.getElementById('existing-folder');
+    existingFolderSelect = document.getElementById('existing-folder');
     existingFolderSelect.innerHTML = '<option value="">选择一个目录...</option>';
     
     folders.forEach(folder => {
@@ -339,7 +340,6 @@ function openAggregateDialog() {
     });
     
     // 设置默认值：使用第一个书签所在目录
-    const existingFolderSelect = document.getElementById('existing-folder');
     if (folders.length > 0) {
         existingFolderId = folders[0].id;
         existingFolderSelect.value = folders[0].id;
