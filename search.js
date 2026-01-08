@@ -1,0 +1,490 @@
+// search.js - 搜索页面的交互逻辑
+
+// 全局变量
+let searchResults = [];
+let filteredSearchResults = [];
+let selectedFolderId = null;
+let selectedFolderTitle = '';
+let existingFolderId = null;
+
+// 页面加载完成后执行
+document.addEventListener('DOMContentLoaded', () => {
+    setupEventListeners();
+    setupSearchOptions();
+});
+
+// 设置事件监听器
+function setupEventListeners() {
+    // 搜索按钮
+    document.getElementById('do-search-btn').addEventListener('click', handleSearchClick);
+    
+    // 搜索输入框回车事件
+    document.getElementById('search-input').addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            handleSearchClick();
+        }
+    });
+    
+    // 全选/反选按钮
+    document.getElementById('select-all-search-options').addEventListener('click', toggleSelectAllSearchOptions);
+    
+    // 监听搜索选项的变化，更新全选按钮状态
+    document.querySelectorAll('.search-option input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectAllButton);
+    });
+    
+    // 聚合按钮
+    document.getElementById('search-aggregate-btn').addEventListener('click', openAggregateDialog);
+    
+    // 设置对话框事件监听器
+    setupDialogEventListeners();
+}
+
+// 设置对话框事件监听器
+function setupDialogEventListeners() {
+    // 聚合对话框事件
+    document.getElementById('cancel-btn').addEventListener('click', closeAggregateDialog);
+    document.getElementById('confirm-btn').addEventListener('click', confirmAggregate);
+    document.getElementById('custom-btn').addEventListener('click', openFolderSelectDialog);
+    
+    // 新建聚合目录单选框事件
+    document.getElementById('create-new-folder-option').addEventListener('change', toggleNewFolderInput);
+    document.getElementById('use-existing-folder-option').addEventListener('change', toggleNewFolderInput);
+    
+    // 文件夹选择对话框事件
+    document.getElementById('folder-cancel-btn').addEventListener('click', closeFolderSelectDialog);
+    document.getElementById('folder-confirm-btn').addEventListener('click', confirmFolderSelect);
+}
+
+// 设置搜索选项
+function setupSearchOptions() {
+    updateSelectAllButton();
+}
+
+// 处理搜索按钮点击
+async function handleSearchClick() {
+    const searchInput = document.getElementById('search-input');
+    const keyword = searchInput.value.trim();
+    
+    console.log('搜索关键词:', keyword);
+    
+    if (keyword === '') {
+        showMessage('请输入搜索关键词', 'error');
+        return;
+    }
+    
+    // 获取搜索选项
+    const searchOptions = {
+        title: document.getElementById('search-title').checked,
+        domain: document.getElementById('search-domain').checked,
+        urlQuery: document.getElementById('search-url-query').checked,
+        folder: document.getElementById('search-folder').checked,
+        caseSensitive: document.getElementById('search-case-sensitive').checked
+    };
+    
+    console.log('搜索选项:', searchOptions);
+    
+    // 检查是否至少选择了一个选项
+    if (!searchOptions.title && !searchOptions.domain && !searchOptions.urlQuery && !searchOptions.folder) {
+        showMessage('请至少选择一个搜索范围', 'error');
+        return;
+    }
+    
+    console.log('开始调用 searchBookmarks...');
+    await searchBookmarks(keyword, searchOptions);
+}
+
+// 搜索书签
+async function searchBookmarks(keyword, searchOptions) {
+    try {
+        console.log('search.js: 开始搜索书签');
+        console.log('search.js: 搜索关键词:', keyword);
+        console.log('search.js: 搜索选项:', searchOptions);
+        
+        const response = await chrome.runtime.sendMessage({
+            action: 'searchBookmarks',
+            keyword: keyword,
+            searchOptions: searchOptions
+        });
+        
+        console.log('search.js: 收到搜索响应:', response);
+        
+        if (response.success) {
+            searchResults = response.bookmarks;
+            filteredSearchResults = [...searchResults];
+            console.log('search.js: 找到书签数量:', searchResults.length);
+            console.log('search.js: 书签列表:', searchResults);
+            displaySearchResults(filteredSearchResults);
+            updateResultCount(filteredSearchResults.length);
+        } else {
+            console.error('search.js: 搜索书签失败:', response.error);
+            showMessage('搜索书签失败: ' + response.error, 'error');
+        }
+    } catch (error) {
+        console.error('search.js: 搜索书签时出错:', error);
+        showMessage('搜索书签失败: ' + error.message, 'error');
+    }
+}
+
+// 显示搜索结果
+function displaySearchResults(bookmarks) {
+    const container = document.getElementById('search-results-container');
+    const noResults = document.getElementById('no-search-results');
+    const aggregateBtn = document.getElementById('search-aggregate-btn');
+    
+    // 清空容器
+    container.innerHTML = '';
+    
+    if (bookmarks.length === 0) {
+        noResults.style.display = 'block';
+        aggregateBtn.disabled = true;
+    } else {
+        noResults.style.display = 'none';
+        
+        // 检查是否需要禁用一键聚合按钮
+        const disableAggregate = bookmarks.length <= 1 || areAllBookmarksInSameFolder(bookmarks);
+        aggregateBtn.disabled = disableAggregate;
+        
+        bookmarks.forEach(bookmark => {
+            const bookmarkElement = createBookmarkElement(bookmark);
+            container.appendChild(bookmarkElement);
+        });
+    }
+}
+
+// 创建书签元素
+function createBookmarkElement(bookmark) {
+    const div = document.createElement('div');
+    div.className = `bookmark-item`;
+    div.dataset.bookmarkId = bookmark.id;
+    
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'bookmark-info';
+    
+    const titleElement = document.createElement('div');
+    titleElement.className = 'bookmark-title';
+    titleElement.textContent = bookmark.title || bookmark.url;
+    
+    const urlElement = document.createElement('div');
+    urlElement.className = 'bookmark-url';
+    urlElement.textContent = bookmark.url;
+    
+    const pathElement = document.createElement('div');
+    pathElement.className = 'bookmark-path';
+    
+    // 如果是从目录搜索来的，显示目录信息
+    if (bookmark.fromFolder) {
+        pathElement.textContent = `来自目录: ${bookmark.fromFolder}`;
+        pathElement.style.color = '#e67e22';
+        pathElement.style.fontWeight = '500';
+    } else {
+        pathElement.textContent = bookmark.fullPath || '';
+    }
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '移除';
+    removeBtn.addEventListener('click', () => handleRemoveFromSearch(bookmark.id));
+    
+    infoDiv.appendChild(titleElement);
+    infoDiv.appendChild(urlElement);
+    infoDiv.appendChild(pathElement);
+    div.appendChild(infoDiv);
+    div.appendChild(removeBtn);
+    
+    return div;
+}
+
+// 从搜索结果移除书签
+function handleRemoveFromSearch(bookmarkId) {
+    // 从过滤后的结果中移除
+    filteredSearchResults = filteredSearchResults.filter(bookmark => bookmark.id !== bookmarkId);
+    
+    // 更新UI
+    const bookmarkElement = document.querySelector(`#search-results-container [data-bookmark-id="${bookmarkId}"]`);
+    if (bookmarkElement) {
+        bookmarkElement.remove();
+    }
+    
+    // 更新显示
+    displaySearchResults(filteredSearchResults);
+    updateResultCount(filteredSearchResults.length);
+}
+
+// 更新结果数量
+function updateResultCount(count) {
+    const countElement = document.getElementById('result-count');
+    countElement.textContent = `找到 ${count} 个书签`;
+}
+
+// 检查所有书签是否在同一个目录下
+function areAllBookmarksInSameFolder(bookmarks) {
+    if (bookmarks.length <= 1) {
+        return true;
+    }
+    
+    // 获取第一个书签的父目录
+    const firstParentId = bookmarks[0].parentId;
+    
+    // 检查其他书签是否有不同的父目录
+    for (const bookmark of bookmarks.slice(1)) {
+        if (bookmark.parentId !== firstParentId) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// 切换全选/反选
+function toggleSelectAllSearchOptions() {
+    const checkboxes = document.querySelectorAll('.search-option input[type="checkbox"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = !allChecked;
+    });
+    
+    updateSelectAllButton();
+}
+
+// 更新全选按钮文本
+function updateSelectAllButton() {
+    const button = document.getElementById('select-all-search-options');
+    const checkboxes = document.querySelectorAll('.search-option input[type="checkbox"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
+    
+    if (allChecked) {
+        button.textContent = '反选';
+    } else if (noneChecked) {
+        button.textContent = '全选';
+    } else {
+        button.textContent = '全选';
+    }
+}
+
+// 处理聚合按钮点击
+async function handleAggregateClick() {
+    if (filteredSearchResults.length === 0) {
+        showMessage('没有可聚合的书签', 'error');
+        return;
+    }
+    
+    openAggregateDialog();
+}
+
+// 切换新建目录输入框显示
+function toggleNewFolderInput() {
+    const createNewFolder = document.getElementById('create-new-folder-option').checked;
+    const newFolderGroup = document.getElementById('new-folder-group');
+    newFolderGroup.style.display = createNewFolder ? 'block' : 'none';
+}
+
+// 打开聚合对话框
+function openAggregateDialog() {
+    // 重置选择的文件夹
+    selectedFolderId = null;
+    selectedFolderTitle = '';
+    
+    // 设置默认的新目录名
+    const newFolderNameInput = document.getElementById('new-folder-name');
+    newFolderNameInput.value = `聚合书签 - ${new Date().toLocaleDateString()}`;
+    
+    // 切换新建目录输入框显示
+    toggleNewFolderInput();
+    
+    // 获取现有目录路径：使用第一个书签所在目录
+    const existingFolderInput = document.getElementById('existing-folder');
+    let targetBookmark = null;
+    
+    if (filteredSearchResults.length > 0) {
+        targetBookmark = filteredSearchResults[0];
+        
+        // 存储现有目录的ID
+        existingFolderId = targetBookmark.parentId;
+        
+        let folderPath = targetBookmark.fullPath || '';
+        
+        // 提取目录部分，移除最后一个元素（书签标题）
+        if (folderPath) {
+            const pathParts = folderPath.split(' > ');
+            if (pathParts.length > 1) {
+                // 如果有多个部分，移除最后一个（书签标题）
+                pathParts.pop();
+                folderPath = pathParts.join(' > ');
+            } else {
+                // 如果只有一个部分，说明在根目录下，使用默认值
+                folderPath = '收藏夹栏';
+            }
+        } else {
+            // 如果没有路径，使用默认值
+            folderPath = '收藏夹栏';
+        }
+        
+        existingFolderInput.value = folderPath;
+    } else {
+        existingFolderInput.value = '收藏夹栏';
+        existingFolderId = '1'; // 默认书签栏ID
+    }
+    
+    // 显示对话框
+    document.getElementById('aggregate-dialog').style.display = 'flex';
+}
+
+// 关闭聚合对话框
+function closeAggregateDialog() {
+    document.getElementById('aggregate-dialog').style.display = 'none';
+}
+
+// 打开文件夹选择对话框
+async function openFolderSelectDialog() {
+    try {
+        // 获取所有书签目录
+        const response = await chrome.runtime.sendMessage({
+            action: 'getAllBookmarkFolders'
+        });
+        
+        if (response.success) {
+            // 显示文件夹树
+            renderFolderTree(response.folders);
+            // 显示对话框
+            document.getElementById('folder-select-dialog').style.display = 'flex';
+        } else {
+            console.error('获取书签目录失败:', response.error);
+            showMessage('获取书签目录失败', 'error');
+        }
+    } catch (error) {
+        console.error('打开文件夹选择对话框时出错:', error);
+        showMessage('打开文件夹选择对话框失败', 'error');
+    }
+}
+
+// 关闭文件夹选择对话框
+function closeFolderSelectDialog() {
+    document.getElementById('folder-select-dialog').style.display = 'none';
+}
+
+// 渲染文件夹树
+function renderFolderTree(folders) {
+    const folderTree = document.getElementById('folder-tree');
+    folderTree.innerHTML = '';
+    
+    folders.forEach(folder => {
+        const folderElement = document.createElement('div');
+        folderElement.className = `folder-item level-${folder.level}`;
+        folderElement.dataset.folderId = folder.id;
+        folderElement.dataset.folderTitle = folder.title;
+        folderElement.innerHTML = `
+            <span class="folder-icon">📁</span>
+            <span class="folder-name">${folder.title}</span>
+        `;
+        
+        folderElement.addEventListener('click', () => {
+            // 移除其他选中状态
+            document.querySelectorAll('.folder-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            // 添加当前选中状态
+            folderElement.classList.add('selected');
+            // 启用确认按钮
+            document.getElementById('folder-confirm-btn').disabled = false;
+        });
+        
+        folderTree.appendChild(folderElement);
+    });
+}
+
+// 确认文件夹选择
+function confirmFolderSelect() {
+    const selectedElement = document.querySelector('.folder-item.selected');
+    if (selectedElement) {
+        selectedFolderId = selectedElement.dataset.folderId;
+        selectedFolderTitle = selectedElement.dataset.folderTitle;
+        
+        // 更新聚合对话框的现有目录
+        const existingFolderInput = document.getElementById('existing-folder');
+        existingFolderInput.value = selectedFolderTitle;
+        
+        closeFolderSelectDialog();
+    }
+}
+
+// 确认聚合操作
+async function confirmAggregate() {
+    try {
+        const createNewFolder = document.getElementById('create-new-folder-option').checked;
+        let folderIdToUse = null;
+        
+        // 如果选择使用现有目录，则使用选择的目录ID
+        if (!createNewFolder) {
+            folderIdToUse = selectedFolderId || existingFolderId;
+        }
+        
+        // 向background.js发送消息，执行聚合操作
+        const response = await chrome.runtime.sendMessage({
+            action: 'aggregateBookmarks',
+            bookmarks: filteredSearchResults,
+            domain: 'search',
+            folderId: folderIdToUse,
+            createNewFolder: createNewFolder,
+            newFolderName: document.getElementById('new-folder-name').value
+        });
+        
+        if (response.success) {
+            closeAggregateDialog();
+            showMessage(`书签已聚合到目录: ${response.folderTitle}`, 'success');
+            // 清空搜索结果
+            filteredSearchResults = [];
+            searchResults = [];
+            displaySearchResults([]);
+            updateResultCount(0);
+            document.getElementById('search-input').value = '';
+        } else {
+            console.error('聚合书签失败:', response.error);
+            showMessage('聚合书签失败: ' + response.error, 'error');
+        }
+    } catch (error) {
+        console.error('处理聚合操作时出错:', error);
+        showMessage('聚合书签失败: ' + error.message, 'error');
+    }
+}
+
+// 显示消息
+function showMessage(message, type = 'info') {
+    // 创建消息元素
+    const messageElement = document.createElement('div');
+    messageElement.className = `message message-${type}`;
+    messageElement.textContent = message;
+    messageElement.style.position = 'fixed';
+    messageElement.style.top = '20px';
+    messageElement.style.left = '50%';
+    messageElement.style.transform = 'translateX(-50%)';
+    messageElement.style.padding = '12px 24px';
+    messageElement.style.borderRadius = '6px';
+    messageElement.style.color = '#fff';
+    messageElement.style.fontSize = '14px';
+    messageElement.style.fontWeight = '500';
+    messageElement.style.zIndex = '10000';
+    messageElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+    
+    if (type === 'success') {
+        messageElement.style.backgroundColor = '#27ae60';
+    } else if (type === 'error') {
+        messageElement.style.backgroundColor = '#e74c3c';
+    } else {
+        messageElement.style.backgroundColor = '#3498db';
+    }
+    
+    // 添加到页面
+    document.body.appendChild(messageElement);
+    
+    // 自动移除消息
+    setTimeout(() => {
+        messageElement.style.opacity = '0';
+        messageElement.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+            messageElement.remove();
+        }, 300);
+    }, 3000);
+}

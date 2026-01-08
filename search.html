@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索书签 - 关联书签查看器</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="search.css">
+</head>
+<body>
+    <div class="search-page">
+        <div class="search-header">
+            <h1 class="page-title">搜索书签</h1>
+            <p class="page-subtitle">快速查找和管理您的书签</p>
+        </div>
+        
+        <div class="search-controls">
+            <div class="search-input-wrapper">
+                <input type="text" id="search-input" class="search-input-large" placeholder="输入关键词搜索书签">
+                <button id="do-search-btn" class="search-btn-large">搜索</button>
+            </div>
+            
+            <div class="search-options-section">
+                <div class="options-header">
+                    <span class="options-title">搜索范围</span>
+                    <button id="select-all-search-options" class="select-all-btn">全选</button>
+                </div>
+                <div class="search-options">
+                    <label class="search-option">
+                        <input type="checkbox" id="search-title" checked>
+                        <span>标题</span>
+                    </label>
+                    <label class="search-option">
+                        <input type="checkbox" id="search-domain" checked>
+                        <span>域名</span>
+                    </label>
+                    <label class="search-option">
+                        <input type="checkbox" id="search-url-query">
+                        <span>URL查询</span>
+                    </label>
+                    <label class="search-option">
+                        <input type="checkbox" id="search-folder">
+                        <span>目录名</span>
+                    </label>
+                </div>
+                <div class="search-options-footer">
+                    <label class="search-option">
+                        <input type="checkbox" id="search-case-sensitive">
+                        <span>区分大小写</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="search-results-section">
+            <div class="results-header">
+                <h2>搜索结果</h2>
+                <span id="result-count" class="result-count">找到 0 个书签</span>
+            </div>
+            <div id="search-results-container" class="search-results-container"></div>
+            <div id="no-search-results" class="no-bookmarks" style="display: none;">
+                没有找到匹配的书签
+            </div>
+        </div>
+        
+        <div class="actions-section">
+            <button id="search-aggregate-btn" class="action-btn aggregate-btn" disabled>一键聚合</button>
+        </div>
+    </div>
+    
+    <!-- 聚合对话框 -->
+    <div id="aggregate-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>聚合书签</h3>
+            </div>
+            <div class="dialog-content">
+                <div class="form-group">
+                    <label class="radio-group">
+                        <input type="radio" name="aggregate-option" id="create-new-folder-option" value="new" checked>
+                        <span>新建聚合目录</span>
+                    </label>
+                    <label class="radio-group">
+                        <input type="radio" name="aggregate-option" id="use-existing-folder-option" value="existing">
+                        <span>使用现有目录</span>
+                    </label>
+                </div>
+                
+                <div class="form-group" id="new-folder-group" style="display: block;">
+                    <label for="new-folder-name">目录名称:</label>
+                    <input type="text" id="new-folder-name" class="form-input" placeholder="输入新目录名称">
+                </div>
+                
+                <div class="form-group">
+                    <label for="existing-folder">现有目录:</label>
+                    <input type="text" id="existing-folder" class="form-input" readonly>
+                    <button id="custom-btn" class="dialog-btn secondary-btn">选择目录</button>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button id="cancel-btn" class="dialog-btn cancel-btn">取消</button>
+                <button id="confirm-btn" class="dialog-btn confirm-btn">确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 自定义目录选择对话框 -->
+    <div id="folder-select-dialog" class="dialog-overlay" style="display: none;">
+        <div class="dialog dialog-sm">
+            <div class="dialog-header">
+                <h3>选择目录</h3>
+            </div>
+            <div class="dialog-content">
+                <div id="folder-tree" class="folder-tree"></div>
+            </div>
+            <div class="dialog-footer">
+                <button id="folder-cancel-btn" class="dialog-btn cancel-btn">取消</button>
+                <button id="folder-confirm-btn" class="dialog-btn confirm-btn" disabled>确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="search.js"></script>
+</body>
+</html>

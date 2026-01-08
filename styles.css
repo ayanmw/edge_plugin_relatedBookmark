@@ -318,20 +318,29 @@ body {
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    width: 320px;
+    width: 400px;
     max-width: 90%;
-    max-height: 90%;
+    max-height: 85vh;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .dialog.dialog-sm {
-    width: 280px;
+    width: 320px;
+}
+
+/* 搜索对话框特殊样式 */
+#search-dialog .dialog {
+    width: 500px;
+    min-height: 400px;
 }
 
 .dialog-header {
     padding: 12px 16px;
     border-bottom: 1px solid #e8e8e8;
     background-color: #fafafa;
+    flex-shrink: 0;
 }
 
 .dialog-header h3 {
@@ -343,8 +352,9 @@ body {
 
 .dialog-content {
     padding: 16px;
-    max-height: 300px;
     overflow-y: auto;
+    flex: 1;
+    min-height: 0;
 }
 
 .dialog-footer {

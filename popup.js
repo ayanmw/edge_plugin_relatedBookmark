@@ -42,9 +42,9 @@ function setupEventListeners() {
     const aggregateBtn = document.getElementById('aggregate-btn');
     aggregateBtn.addEventListener('click', openAggregateDialog);
     
-    // 搜索按钮
+    // 搜索按钮 - 打开新的标签页
     const searchBtn = document.getElementById('search-btn');
-    searchBtn.addEventListener('click', openSearchDialog);
+    searchBtn.addEventListener('click', openSearchPage);
 }
 
 // 设置对话框事件监听器
@@ -79,6 +79,9 @@ function setupDialogEventListeners() {
     document.querySelectorAll('.search-option input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', updateSelectAllButton);
     });
+    
+    // 搜索对话框调整大小功能
+    setupDialogResize('search-dialog', 'search-dialog-resize');
 }
 
 // 切换新建目录输入框显示
@@ -427,250 +430,11 @@ function showMessage(message, type = 'info') {
     }, 3000);
 }
 
-// 打开搜索对话框
-async function openSearchDialog() {
-    // 清空搜索输入和结果
-    document.getElementById('search-input').value = '';
-    searchResults = [];
-    filteredSearchResults = [];
-    document.getElementById('search-results-container').innerHTML = '';
-    document.getElementById('no-search-results').style.display = 'none';
-    document.getElementById('search-aggregate-btn').disabled = true;
-    
-    // 重置全选按钮状态
-    updateSelectAllButton();
-    
-    // 显示对话框
-    document.getElementById('search-dialog').style.display = 'flex';
-    
-    // 聚焦搜索输入框
-    document.getElementById('search-input').focus();
-}
-
-// 关闭搜索对话框
-function closeSearchDialog() {
-    document.getElementById('search-dialog').style.display = 'none';
-}
-
-// 切换全选/反选
-function toggleSelectAllSearchOptions() {
-    const checkboxes = document.querySelectorAll('.search-option input[type="checkbox"]');
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = !allChecked;
+// 打开搜索页面
+function openSearchPage() {
+    chrome.tabs.create({
+        url: chrome.runtime.getURL('search.html')
     });
-    
-    updateSelectAllButton();
-}
-
-// 更新全选按钮文本
-function updateSelectAllButton() {
-    const button = document.getElementById('select-all-search-options');
-    const checkboxes = document.querySelectorAll('.search-option input[type="checkbox"]');
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    const noneChecked = Array.from(checkboxes).every(cb => !cb.checked);
-    
-    if (allChecked) {
-        button.textContent = '反选';
-    } else if (noneChecked) {
-        button.textContent = '全选';
-    } else {
-        button.textContent = '全选';
-    }
-}
-
-// 处理搜索按钮点击
-async function handleSearchClick() {
-    const searchInput = document.getElementById('search-input');
-    const keyword = searchInput.value.trim();
-    
-    console.log('搜索关键词:', keyword);
-    
-    if (keyword === '') {
-        showMessage('请输入搜索关键词', 'error');
-        return;
-    }
-    
-    // 获取搜索选项
-    const searchOptions = {
-        title: document.getElementById('search-title').checked,
-        domain: document.getElementById('search-domain').checked,
-        urlQuery: document.getElementById('search-url-query').checked,
-        folder: document.getElementById('search-folder').checked,
-        caseSensitive: document.getElementById('search-case-sensitive').checked
-    };
-    
-    console.log('搜索选项:', searchOptions);
-    
-    // 检查是否至少选择了一个选项
-    if (!searchOptions.title && !searchOptions.domain && !searchOptions.urlQuery && !searchOptions.folder) {
-        showMessage('请至少选择一个搜索范围', 'error');
-        return;
-    }
-    
-    console.log('开始调用 searchBookmarks...');
-    await searchBookmarks(keyword, searchOptions);
-}
-
-// 处理搜索输入
-async function handleSearchInput(event) {
-    const keyword = event.target.value.trim();
-    
-    if (keyword === '') {
-        searchResults = [];
-        filteredSearchResults = [];
-        document.getElementById('search-results-container').innerHTML = '';
-        document.getElementById('no-search-results').style.display = 'none';
-        document.getElementById('search-aggregate-btn').disabled = true;
-        return;
-    }
-    
-    await searchBookmarks(keyword);
-}
-
-// 搜索书签
-async function searchBookmarks(keyword, searchOptions) {
-    try {
-        console.log('popup.js: 开始搜索书签');
-        console.log('popup.js: 搜索关键词:', keyword);
-        console.log('popup.js: 搜索选项:', searchOptions);
-        
-        const response = await chrome.runtime.sendMessage({
-            action: 'searchBookmarks',
-            keyword: keyword,
-            searchOptions: searchOptions
-        });
-        
-        console.log('popup.js: 收到搜索响应:', response);
-        
-        if (response.success) {
-            searchResults = response.bookmarks;
-            filteredSearchResults = [...searchResults];
-            console.log('popup.js: 找到书签数量:', searchResults.length);
-            console.log('popup.js: 书签列表:', searchResults);
-            displaySearchResults(filteredSearchResults);
-        } else {
-            console.error('popup.js: 搜索书签失败:', response.error);
-            showMessage('搜索书签失败: ' + response.error, 'error');
-        }
-    } catch (error) {
-        console.error('popup.js: 搜索书签时出错:', error);
-        showMessage('搜索书签失败: ' + error.message, 'error');
-    }
-}
-
-// 显示搜索结果
-function displaySearchResults(bookmarks) {
-    const container = document.getElementById('search-results-container');
-    const noResults = document.getElementById('no-search-results');
-    const aggregateBtn = document.getElementById('search-aggregate-btn');
-    
-    // 清空容器
-    container.innerHTML = '';
-    
-    if (bookmarks.length === 0) {
-        noResults.style.display = 'block';
-        aggregateBtn.disabled = true;
-    } else {
-        noResults.style.display = 'none';
-        
-        // 检查是否需要禁用一键聚合按钮
-        const disableAggregate = bookmarks.length <= 1 || areAllBookmarksInSameFolder(bookmarks);
-        aggregateBtn.disabled = disableAggregate;
-        
-        bookmarks.forEach(bookmark => {
-            const bookmarkElement = createSearchResultElement(bookmark);
-            container.appendChild(bookmarkElement);
-        });
-    }
-}
-
-// 创建搜索结果元素
-function createSearchResultElement(bookmark) {
-    const div = document.createElement('div');
-    div.className = `bookmark-item`;
-    div.dataset.bookmarkId = bookmark.id;
-    
-    const infoDiv = document.createElement('div');
-    infoDiv.className = 'bookmark-info';
-    
-    const titleElement = document.createElement('div');
-    titleElement.className = 'bookmark-title';
-    titleElement.textContent = bookmark.title || bookmark.url;
-    
-    const urlElement = document.createElement('div');
-    urlElement.className = 'bookmark-url';
-    urlElement.textContent = bookmark.url;
-    
-    const pathElement = document.createElement('div');
-    pathElement.className = 'bookmark-path';
-    
-    // 如果是从目录搜索来的，显示目录信息
-    if (bookmark.fromFolder) {
-        pathElement.textContent = `来自目录: ${bookmark.fromFolder}`;
-        pathElement.style.color = '#e67e22';
-        pathElement.style.fontWeight = '500';
-    } else {
-        pathElement.textContent = bookmark.fullPath || '';
-    }
-    
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-btn';
-    removeBtn.textContent = '移除';
-    removeBtn.addEventListener('click', () => handleRemoveFromSearch(bookmark.id));
-    
-    infoDiv.appendChild(titleElement);
-    infoDiv.appendChild(urlElement);
-    infoDiv.appendChild(pathElement);
-    div.appendChild(infoDiv);
-    div.appendChild(removeBtn);
-    
-    return div;
-}
-
-// 从搜索结果移除书签
-function handleRemoveFromSearch(bookmarkId) {
-    // 从过滤后的结果中移除
-    filteredSearchResults = filteredSearchResults.filter(bookmark => bookmark.id !== bookmarkId);
-    
-    // 更新UI
-    const bookmarkElement = document.querySelector(`#search-results-container [data-bookmark-id="${bookmarkId}"]`);
-    if (bookmarkElement) {
-        bookmarkElement.remove();
-    }
-    
-    // 更新显示
-    displaySearchResults(filteredSearchResults);
-}
-
-// 确认搜索结果的聚合
-async function confirmSearchAggregate() {
-    try {
-        const createNewFolder = true;
-        const newFolderName = `聚合书签 - ${new Date().toLocaleDateString()}`;
-        
-        // 向background.js发送消息，执行聚合操作
-        const response = await chrome.runtime.sendMessage({
-            action: 'aggregateBookmarks',
-            bookmarks: filteredSearchResults,
-            domain: 'search',
-            folderId: null,
-            createNewFolder: createNewFolder,
-            newFolderName: newFolderName
-        });
-        
-        if (response.success) {
-            closeSearchDialog();
-            showMessage(`书签已聚合到目录: ${response.folderTitle}`, 'success');
-        } else {
-            console.error('聚合书签失败:', response.error);
-            showMessage('聚合书签失败', 'error');
-        }
-    } catch (error) {
-        console.error('处理聚合操作时出错:', error);
-        showMessage('聚合书签失败', 'error');
-    }
 }
 
 // 添加消息样式
