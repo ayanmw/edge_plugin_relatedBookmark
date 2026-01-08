@@ -281,10 +281,16 @@ function toggleNewFolderInput() {
     const newFolderGroup = document.getElementById('new-folder-group');
     newFolderGroup.style.display = createNewFolder ? 'block' : 'none';
     
-    // 如果切换到新建目录，清空之前选择的目录ID
     if (createNewFolder) {
+        // 如果切换到新建目录，清空之前选择的目录ID
         selectedFolderId = null;
         selectedFolderTitle = '';
+    } else {
+        // 如果切换到使用现有目录，从下拉框获取当前选择的目录ID
+        if (existingFolderSelect) {
+            selectedFolderId = existingFolderSelect.value || null;
+            selectedFolderTitle = existingFolderSelect.options[existingFolderSelect.selectedIndex]?.textContent || '';
+        }
     }
 }
 
