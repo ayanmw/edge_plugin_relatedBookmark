@@ -453,6 +453,9 @@ function confirmFolderSelect() {
             newOption.selected = true;
         }
         
+        // 更新 existingFolderId
+        existingFolderId = selectedFolderId;
+        
         closeFolderSelectDialog();
     }
 }
