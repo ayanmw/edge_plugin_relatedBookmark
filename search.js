@@ -45,10 +45,15 @@ function setupDialogEventListeners() {
     // 聚合对话框事件
     document.getElementById('cancel-btn').addEventListener('click', closeAggregateDialog);
     document.getElementById('confirm-btn').addEventListener('click', confirmAggregate);
+    document.getElementById('custom-btn').addEventListener('click', openFolderSelectDialog);
     
     // 新建聚合目录单选框事件
     document.getElementById('create-new-folder-option').addEventListener('change', toggleNewFolderInput);
     document.getElementById('use-existing-folder-option').addEventListener('change', toggleNewFolderInput);
+    
+    // 文件夹选择对话框事件
+    document.getElementById('folder-cancel-btn').addEventListener('click', closeFolderSelectDialog);
+    document.getElementById('folder-confirm-btn').addEventListener('click', confirmFolderSelect);
 }
 
 // 设置搜索选项
@@ -343,6 +348,98 @@ function openAggregateDialog() {
 // 关闭聚合对话框
 function closeAggregateDialog() {
     document.getElementById('aggregate-dialog').style.display = 'none';
+}
+
+// 打开文件夹选择对话框
+async function openFolderSelectDialog() {
+    try {
+        // 获取所有书签目录
+        const response = await chrome.runtime.sendMessage({
+            action: 'getAllBookmarkFolders'
+        });
+        
+        if (response.success) {
+            // 显示文件夹树
+            renderFolderTree(response.folders);
+            // 显示对话框
+            document.getElementById('folder-select-dialog').style.display = 'flex';
+        } else {
+            console.error('获取书签目录失败:', response.error);
+            showMessage('获取书签目录失败', 'error');
+        }
+    } catch (error) {
+        console.error('打开文件夹选择对话框时出错:', error);
+        showMessage('打开文件夹选择对话框失败', 'error');
+    }
+}
+
+// 关闭文件夹选择对话框
+function closeFolderSelectDialog() {
+    document.getElementById('folder-select-dialog').style.display = 'none';
+}
+
+// 渲染文件夹树
+function renderFolderTree(folders) {
+    const folderTree = document.getElementById('folder-tree');
+    folderTree.innerHTML = '';
+    
+    folders.forEach(folder => {
+        const folderElement = document.createElement('div');
+        folderElement.className = `folder-item level-${folder.level}`;
+        folderElement.dataset.folderId = folder.id;
+        folderElement.dataset.folderTitle = folder.title;
+        folderElement.innerHTML = `
+            <span class="folder-icon">📁</span>
+            <span class="folder-name">${folder.title}</span>
+        `;
+        
+        folderElement.addEventListener('click', () => {
+            // 移除其他选中状态
+            document.querySelectorAll('.folder-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            // 添加当前选中状态
+            folderElement.classList.add('selected');
+            // 启用确认按钮
+            document.getElementById('folder-confirm-btn').disabled = false;
+        });
+        
+        folderTree.appendChild(folderElement);
+    });
+}
+
+// 确认文件夹选择
+function confirmFolderSelect() {
+    const selectedElement = document.querySelector('.folder-item.selected');
+    if (selectedElement) {
+        selectedFolderId = selectedElement.dataset.folderId;
+        selectedFolderTitle = selectedElement.dataset.folderTitle;
+        
+        // 更新聚合对话框的下拉框
+        const existingFolderSelect = document.getElementById('existing-folder');
+        
+        // 检查是否已存在该选项
+        let existingOption = null;
+        for (let i = 0; i < existingFolderSelect.options.length; i++) {
+            if (existingFolderSelect.options[i].value === selectedFolderId) {
+                existingOption = existingFolderSelect.options[i];
+                break;
+            }
+        }
+        
+        if (existingOption) {
+            existingOption.selected = true;
+        } else {
+            // 如果不存在，添加新选项
+            const newOption = document.createElement('option');
+            newOption.value = selectedFolderId;
+            newOption.textContent = selectedFolderTitle;
+            existingFolderSelect.appendChild(newOption);
+            newOption.selected = true;
+        }
+        
+        closeFolderSelectDialog();
+    }
 }
 
 // 确认聚合操作
