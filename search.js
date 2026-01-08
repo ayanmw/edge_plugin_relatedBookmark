@@ -279,6 +279,12 @@ function toggleNewFolderInput() {
     const createNewFolder = document.getElementById('create-new-folder-option').checked;
     const newFolderGroup = document.getElementById('new-folder-group');
     newFolderGroup.style.display = createNewFolder ? 'block' : 'none';
+    
+    // 如果切换到新建目录，清空之前选择的目录ID
+    if (createNewFolder) {
+        selectedFolderId = null;
+        selectedFolderTitle = '';
+    }
 }
 
 // 打开聚合对话框
@@ -333,12 +339,13 @@ function openAggregateDialog() {
     });
     
     // 设置默认值：使用第一个书签所在目录
-    const existingFolderInput = document.getElementById('existing-folder');
+    const existingFolderSelect = document.getElementById('existing-folder');
     if (folders.length > 0) {
         existingFolderId = folders[0].id;
-        existingFolderInput.value = folders[0].id;
+        existingFolderSelect.value = folders[0].id;
     } else {
         existingFolderId = '1'; // 默认书签栏ID
+        existingFolderSelect.value = '';
     }
     
     // 显示对话框
