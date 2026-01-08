@@ -200,7 +200,7 @@ async function deleteBookmark(bookmarkId) {
 }
 
 // 一键聚合书签（移动到同一目录）
-async function aggregateBookmarks(bookmarks, domain, folderId = null, createNewFolder = true, newFolderName = null) {
+async function aggregateBookmarks(bookmarks, domain, folderId = null, createNewFolder = true, newFolderName = null, parentFolderId = null) {
   try {
     let folder;
     let folderTitle;
@@ -221,7 +221,7 @@ async function aggregateBookmarks(bookmarks, domain, folderId = null, createNewF
     } else if (createNewFolder) {
       // 创建新的聚合目录
       folderTitle = newFolderName || `关联书签 - ${domain}`;
-      folder = await createBookmarkFolder(folderTitle);
+      folder = await createBookmarkFolder(folderTitle, parentFolderId);
     } else {
       // 不使用指定目录，也不创建新目录，使用默认书签栏
       folder = { id: '1' };

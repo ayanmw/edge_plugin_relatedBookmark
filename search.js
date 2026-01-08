@@ -454,11 +454,15 @@ async function confirmAggregate() {
     try {
         const createNewFolder = document.getElementById('create-new-folder-option').checked;
         let folderIdToUse = null;
+        let parentFolderId = null;
         
         // 如果选择使用现有目录，则从下拉框获取选择的目录ID
         if (!createNewFolder) {
             const existingFolderSelect = document.getElementById('existing-folder');
             folderIdToUse = existingFolderSelect.value || existingFolderId;
+        } else {
+            // 如果选择新建目录，使用当前选择的目录作为父目录
+            parentFolderId = existingFolderId;
         }
         
         // 向background.js发送消息，执行聚合操作
@@ -468,7 +472,8 @@ async function confirmAggregate() {
             domain: 'search',
             folderId: folderIdToUse,
             createNewFolder: createNewFolder,
-            newFolderName: document.getElementById('new-folder-name').value
+            newFolderName: document.getElementById('new-folder-name').value,
+            parentFolderId: parentFolderId
         });
         
         if (response.success) {
