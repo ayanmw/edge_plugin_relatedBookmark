@@ -412,10 +412,10 @@ async function getBookmarksInFolder(folderId) {
 }
 
 // 创建书签文件夹
-async function createBookmarkFolder(title) {
+async function createBookmarkFolder(title, parentFolderId = '1') {
   return new Promise((resolve) => {
     chrome.bookmarks.create({
-      parentId: '1', // 默认书签栏
+      parentId: parentFolderId, // 使用指定的父目录，默认为书签栏
       title: title
     }, (folder) => {
       if (chrome.runtime.lastError) {
