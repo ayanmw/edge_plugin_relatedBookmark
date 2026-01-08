@@ -342,6 +342,11 @@ function openAggregateDialog() {
         existingFolderSelect.appendChild(option);
     });
     
+    // 添加下拉框改变事件监听器
+    existingFolderSelect.addEventListener('change', () => {
+        existingFolderId = existingFolderSelect.value || null;
+    });
+    
     // 设置默认值：使用第一个书签所在目录
     if (folders.length > 0) {
         existingFolderId = folders[0].id;
